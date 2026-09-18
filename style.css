@@ -96,7 +96,7 @@ body {
   margin-bottom: 26px;
   transition: opacity 0.15s ease;
 }
-.prompt .dim { color: var(--sub); }
+.dim { color: var(--sub); }
 
 .snippet {
   background: var(--sub-alt);

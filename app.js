@@ -6,64 +6,70 @@
 const EX = [
   {
     title: "Delete the current line",
-    mac: { mod: ["meta", "shift"], key: "k", label: "⌘ ⇧ K" },
-    win: { mod: ["ctrl", "shift"], key: "k", label: "Ctrl Shift K" },
+    mac: [
+      { mod: ["meta", "shift"], key: "k", label: "⌘ ⇧ K" },
+      { mod: ["meta"], key: "x", label: "⌘ X" },
+    ],
+    win: [
+      { mod: ["ctrl", "shift"], key: "k", label: "Ctrl Shift K" },
+      { mod: ["ctrl"], key: "x", label: "Ctrl X" },
+    ],
     before: [["const", " total = price + tax;"], ["const", " shipping = 0;"]],
     cursorLine: 0,
     after: [["const", " shipping = 0;"]],
   },
   {
     title: "Move the current line down",
-    mac: { mod: ["alt"], key: "ArrowDown", label: "⌥ ↓" },
-    win: { mod: ["alt"], key: "ArrowDown", label: "Alt ↓" },
+    mac: [{ mod: ["alt"], key: "ArrowDown", label: "⌥ ↓" }],
+    win: [{ mod: ["alt"], key: "ArrowDown", label: "Alt ↓" }],
     before: [["const", " a = 1;"], ["const", " b = 2;"]],
     cursorLine: 0,
     after: [["const", " b = 2;"], ["const", " a = 1;"]],
   },
   {
     title: "Duplicate the line downward",
-    mac: { mod: ["alt", "shift"], key: "ArrowDown", label: "⇧ ⌥ ↓" },
-    win: { mod: ["alt", "shift"], key: "ArrowDown", label: "Shift Alt ↓" },
+    mac: [{ mod: ["alt", "shift"], key: "ArrowDown", label: "⇧ ⌥ ↓" }],
+    win: [{ mod: ["alt", "shift"], key: "ArrowDown", label: "Shift Alt ↓" }],
     before: [["return", " user.name;"]],
     cursorLine: 0,
     after: [["return", " user.name;"], ["return", " user.name;"]],
   },
   {
     title: "Toggle line comment",
-    mac: { mod: ["meta"], key: "/", label: "⌘ /" },
-    win: { mod: ["ctrl"], key: "/", label: "Ctrl /" },
+    mac: [{ mod: ["meta"], key: "/", label: "⌘ /" }],
+    win: [{ mod: ["ctrl"], key: "/", label: "Ctrl /" }],
     before: [["", "debugger;"]],
     cursorLine: 0,
     after: [["// ", "debugger;"]],
   },
   {
     title: "Select the next occurrence of the selected word",
-    mac: { mod: ["meta"], key: "d", label: "⌘ D" },
-    win: { mod: ["ctrl"], key: "d", label: "Ctrl D" },
+    mac: [{ mod: ["meta"], key: "d", label: "⌘ D" }],
+    win: [{ mod: ["ctrl"], key: "d", label: "Ctrl D" }],
     before: [["", "[count]", " = ", "count", " + 1;"]],
     cursorLine: 0,
     after: [["", "[count]", " = ", "[count]", " + 1;"]],
   },
   {
     title: "Indent the current line",
-    mac: { mod: ["meta"], key: "]", label: "⌘ ]" },
-    win: { mod: ["ctrl"], key: "]", label: "Ctrl ]" },
+    mac: [{ mod: ["meta"], key: "]", label: "⌘ ]" }],
+    win: [{ mod: ["ctrl"], key: "]", label: "Ctrl ]" }],
     before: [["if", " (ok) {"], ["", "doThing();"], ["}"]],
     cursorLine: 1,
     after: [["if", " (ok) {"], ["  ", "doThing();"], ["}"]],
   },
   {
     title: "Jump to the start of the line",
-    mac: { mod: [], key: "Home", label: "Home" },
-    win: { mod: [], key: "Home", label: "Home" },
+    mac: [{ mod: [], key: "Home", label: "Home" }],
+    win: [{ mod: [], key: "Home", label: "Home" }],
     before: [["    ", "return value;"]],
     cursorLine: 0,
     after: [["|    ", "return value;"]],
   },
   {
     title: "Rename the symbol under the cursor",
-    mac: { mod: [], key: "F2", label: "F2" },
-    win: { mod: [], key: "F2", label: "F2" },
+    mac: [{ mod: [], key: "F2", label: "F2" }],
+    win: [{ mod: [], key: "F2", label: "F2" }],
     before: [["const", " ", "[usr]", " = getUser();"]],
     cursorLine: 0,
     after: [["✏️  rename box opens"]],
@@ -188,7 +194,7 @@ function finishRound() {
   els.results.hidden = false;
 }
 
-function matchesShortcut(e, sc) {
+function matchesOne(e, sc) {
   const hasMeta = sc.mod.includes("meta");
   const hasCtrl = sc.mod.includes("ctrl");
   const hasAlt = sc.mod.includes("alt");
@@ -200,6 +206,13 @@ function matchesShortcut(e, sc) {
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   const want = sc.key.length === 1 ? sc.key.toLowerCase() : sc.key;
   return key === want;
+}
+
+// A shortcut can have more than one valid real-world form (e.g. VS Code's
+// "delete line" is both Cmd+Shift+K and plain Cmd+X with no selection) —
+// any accepted variant counts as correct.
+function matchesShortcut(e, variants) {
+  return variants.some((sc) => matchesOne(e, sc));
 }
 
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
@@ -229,7 +242,7 @@ document.addEventListener(
     } else {
       // Only penalize plausible "attempts" (something with a modifier held,
       // or a lone key when the target has no modifier) so idle keys don't count.
-      const isAttempt = e.metaKey || e.ctrlKey || e.altKey || sc.mod.length === 0;
+      const isAttempt = e.metaKey || e.ctrlKey || e.altKey || sc.some((v) => v.mod.length === 0);
       if (isAttempt && !attemptedWrongThisCard) {
         attemptedWrongThisCard = true;
         wrong += 1;
@@ -247,7 +260,7 @@ document.addEventListener(
 );
 
 // Prevent the browser from hijacking common combos mid-round.
-const GUARD_KEYS = new Set(["d", "l", "k", "/", "]", "["]);
+const GUARD_KEYS = new Set(["d", "l", "k", "x", "/", "]", "["]);
 document.addEventListener(
   "keydown",
   (e) => {
@@ -261,11 +274,15 @@ document.addEventListener(
 
 els.peekBtn.addEventListener("click", () => {
   const ex = order[pos];
-  const sc = shortcutFor(ex);
-  els.answer.innerHTML = sc.label
-    .split(" ")
-    .map((k) => `<kbd>${k}</kbd>`)
-    .join("");
+  const variants = shortcutFor(ex);
+  els.answer.innerHTML = variants
+    .map((sc) =>
+      sc.label
+        .split(" ")
+        .map((k) => `<kbd>${k}</kbd>`)
+        .join("")
+    )
+    .join(' <span class="dim">or</span> ');
 });
 
 els.restartBtn.addEventListener("click", startRound);
