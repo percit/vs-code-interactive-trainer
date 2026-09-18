@@ -1,10 +1,12 @@
-/* shortcuttype — small first pass.
- * Sequential shortcut drill, monkeytype-style flow, no persistence/SRS yet.
+/* shortcuttype — monkeytype-style shortcut drill with persistent
+ * spaced repetition: exercises you fumble or answer slowly come back
+ * more often in the next round; ones you nail stay rare.
  * No build step, no dependencies.
  */
 
 const EX = [
   {
+    id: "delete-line",
     title: "Delete the current line",
     mac: [
       { mod: ["meta", "shift"], key: "k", label: "⌘ ⇧ K" },
@@ -19,6 +21,7 @@ const EX = [
     after: [["const", " shipping = 0;"]],
   },
   {
+    id: "move-down",
     title: "Move the current line down",
     mac: [{ mod: ["alt"], key: "ArrowDown", label: "⌥ ↓" }],
     win: [{ mod: ["alt"], key: "ArrowDown", label: "Alt ↓" }],
@@ -27,6 +30,7 @@ const EX = [
     after: [["const", " b = 2;"], ["const", " a = 1;"]],
   },
   {
+    id: "copy-down",
     title: "Duplicate the line downward",
     mac: [{ mod: ["alt", "shift"], key: "ArrowDown", label: "⇧ ⌥ ↓" }],
     win: [{ mod: ["alt", "shift"], key: "ArrowDown", label: "Shift Alt ↓" }],
@@ -35,6 +39,7 @@ const EX = [
     after: [["return", " user.name;"], ["return", " user.name;"]],
   },
   {
+    id: "toggle-comment",
     title: "Toggle line comment",
     mac: [{ mod: ["meta"], key: "/", label: "⌘ /" }],
     win: [{ mod: ["ctrl"], key: "/", label: "Ctrl /" }],
@@ -43,6 +48,7 @@ const EX = [
     after: [["// ", "debugger;"]],
   },
   {
+    id: "select-next",
     title: "Select the next occurrence of the selected word",
     mac: [{ mod: ["meta"], key: "d", label: "⌘ D" }],
     win: [{ mod: ["ctrl"], key: "d", label: "Ctrl D" }],
@@ -51,6 +57,7 @@ const EX = [
     after: [["", "[count]", " = ", "[count]", " + 1;"]],
   },
   {
+    id: "indent",
     title: "Indent the current line",
     mac: [{ mod: ["meta"], key: "]", label: "⌘ ]" }],
     win: [{ mod: ["ctrl"], key: "]", label: "Ctrl ]" }],
@@ -59,6 +66,7 @@ const EX = [
     after: [["if", " (ok) {"], ["  ", "doThing();"], ["}"]],
   },
   {
+    id: "home",
     title: "Jump to the start of the line",
     mac: [{ mod: [], key: "Home", label: "Home" }],
     win: [{ mod: [], key: "Home", label: "Home" }],
@@ -67,6 +75,7 @@ const EX = [
     after: [["|    ", "return value;"]],
   },
   {
+    id: "rename-symbol",
     title: "Rename the symbol under the cursor",
     mac: [{ mod: [], key: "F2", label: "F2" }],
     win: [{ mod: [], key: "F2", label: "F2" }],
@@ -80,6 +89,8 @@ const EX = [
 ];
 
 const PLATFORM_KEY = "shortcuttype_platform";
+const SRS_KEY = "shortcuttype_srs_v1";
+const SLOW_MS = 3000; // a correct-but-slow first try still counts as "needs more reps"
 
 function detectPlatform() {
   const saved = localStorage.getItem(PLATFORM_KEY);
@@ -87,12 +98,38 @@ function detectPlatform() {
   return /Mac|iPod|iPhone|iPad/.test(navigator.platform) ? "mac" : "win";
 }
 
+function loadSRS() {
+  try {
+    return JSON.parse(localStorage.getItem(SRS_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveSRS() {
+  localStorage.setItem(SRS_KEY, JSON.stringify(srs));
+}
+function getCard(id) {
+  return srs[id] || { box: 0, seen: 0, lastOutcome: null };
+}
+function updateSRS(id, outcome) {
+  const card = getCard(id);
+  card.seen += 1;
+  if (outcome === "good") card.box = Math.min(5, card.box + 1);
+  else if (outcome === "wrong") card.box = 0;
+  // "slow": box stays put — still counts as practiced, just not mastered yet.
+  card.lastOutcome = outcome;
+  srs[id] = card;
+  saveSRS();
+}
+
+let srs = loadSRS();
 let platform = detectPlatform();
 let order = [];
 let pos = 0;
 let correct = 0;
 let wrong = 0;
 let startTime = 0;
+let cardStartTime = 0;
 let attemptedWrongThisCard = false;
 let done = false;
 
@@ -120,6 +157,34 @@ function shuffle(arr) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+// Weaker exercises (low box) show up more often; mastered ones (high box)
+// show up once per round. This is the spaced-repetition part.
+function buildQueue() {
+  const pool = [];
+  for (const ex of EX) {
+    const box = getCard(ex.id).box;
+    const weight = box <= 0 ? 3 : box === 1 ? 2 : 1;
+    for (let i = 0; i < weight; i++) pool.push(ex);
+  }
+  const q = shuffle(pool);
+  // Avoid the same exercise landing back-to-back where possible.
+  for (let i = 1; i < q.length; i++) {
+    if (q[i].id === q[i - 1].id) {
+      for (let j = i + 1; j < q.length; j++) {
+        if (q[j].id !== q[i - 1].id) {
+          [q[i], q[j]] = [q[j], q[i]];
+          break;
+        }
+      }
+    }
+  }
+  return q;
+}
+
+function masteredCount() {
+  return EX.filter((ex) => getCard(ex.id).box >= 4).length;
 }
 
 function shortcutFor(ex) {
@@ -159,11 +224,11 @@ function renderSnippet(ex, showAfter) {
 
 function renderStats() {
   const total = order.length;
-  els.stats.innerHTML = `<span>${pos}/${total}</span><span><b>${correct}</b> correct</span><span>${wrong} missed</span>`;
+  els.stats.innerHTML = `<span>${pos}/${total}</span><span><b>${correct}</b> correct</span><span>${wrong} missed</span><span>◆ mastered <b>${masteredCount()}</b>/${EX.length}</span>`;
 }
 
 function startRound() {
-  order = shuffle(EX);
+  order = buildQueue();
   pos = 0;
   correct = 0;
   wrong = 0;
@@ -176,6 +241,7 @@ function startRound() {
 
 function loadCard() {
   attemptedWrongThisCard = false;
+  cardStartTime = performance.now();
   els.answer.textContent = "";
   els.peek.hidden = false;
   const ex = order[pos];
@@ -253,6 +319,9 @@ document.addEventListener(
       e.preventDefault();
       e.stopPropagation();
       correct += 1;
+      const elapsed = performance.now() - cardStartTime;
+      const outcome = attemptedWrongThisCard ? "wrong" : elapsed > SLOW_MS ? "slow" : "good";
+      updateSRS(ex.id, outcome);
       els.snippet.classList.add("flash-correct");
       renderSnippet(ex, true);
       renderStats();
