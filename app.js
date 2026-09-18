@@ -224,6 +224,21 @@ function matchesShortcut(e, variants) {
 
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
 
+// Cmd+Enter on Mac / Win+Enter on Windows — both are just metaKey+Enter in
+// the browser, so one listener covers the "show shortcut" hint everywhere.
+document.addEventListener(
+  "keydown",
+  (e) => {
+    if (done || order.length === 0) return;
+    if (e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && e.key === "Enter") {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      els.peekBtn.click();
+    }
+  },
+  true
+);
+
 document.addEventListener(
   "keydown",
   (e) => {
