@@ -73,6 +73,9 @@ const EX = [
     before: [["const", " ", "[usr]", " = getUser();"]],
     cursorLine: 0,
     after: [["✏️  rename box opens"]],
+    note: {
+      mac: "On a MacBook keyboard, F2 is usually mapped to brightness. Hold Fn+F2, or enable \"Use F1, F2, etc. keys as standard function keys\" in System Settings → Keyboard.",
+    },
   },
 ];
 
@@ -99,6 +102,7 @@ const els = {
   stats: document.getElementById("stats"),
   peek: document.getElementById("peek"),
   peekBtn: document.getElementById("peekBtn"),
+  note: document.getElementById("note"),
   answer: document.getElementById("answer"),
   test: document.getElementById("test"),
   results: document.getElementById("results"),
@@ -179,6 +183,9 @@ function loadCard() {
   renderSnippet(ex, false);
   renderStats();
   els.snippet.classList.remove("flash-correct", "flash-wrong");
+  const note = ex.note && ex.note[platform];
+  els.note.textContent = note || "";
+  els.note.hidden = !note;
 }
 
 function finishRound() {
@@ -293,6 +300,12 @@ function setPlatform(p) {
   [...els.platformToggle.querySelectorAll(".platform-btn")].forEach((b) => {
     b.classList.toggle("active", b.dataset.os === p);
   });
+  if (order.length && !done) {
+    const ex = order[pos];
+    const note = ex.note && ex.note[platform];
+    els.note.textContent = note || "";
+    els.note.hidden = !note;
+  }
 }
 
 els.platformToggle.querySelectorAll(".platform-btn").forEach((b) => {

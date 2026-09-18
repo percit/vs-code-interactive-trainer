@@ -134,6 +134,17 @@ body {
 }
 @keyframes blink { 50% { opacity: 0; } }
 
+.note {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  background: rgba(226, 183, 20, 0.08);
+  border-left: 2px solid var(--accent);
+  border-radius: 4px;
+  color: var(--sub);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
 .peek {
   margin-top: 22px;
   text-align: center;
