@@ -31,7 +31,7 @@ const EX = [
   },
   {
     id: "copy-down",
-    title: "Duplicate the line downward",
+    title: "Copy the current line, placing the duplicate below it",
     mac: [{ mod: ["alt", "shift"], key: "ArrowDown", label: "⇧ ⌥ ↓" }],
     win: [{ mod: ["alt", "shift"], key: "ArrowDown", label: "Shift Alt ↓" }],
     before: [["return", " user.name;"]],
