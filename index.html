@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>shortcuttype — VS Code shortcut trainer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">shortcut<span>type</span></div>
+      <div class="platform-toggle" id="platformToggle">
+        <button class="platform-btn" data-os="mac">mac</button>
+        <button class="platform-btn" data-os="win">win/linux</button>
+      </div>
+    </header>
+
+    <div class="stats" id="stats"></div>
+
+    <main class="test" id="test">
+      <div class="prompt" id="prompt"></div>
+      <div class="snippet" id="snippet" tabindex="0"></div>
+      <div class="peek" id="peek">
+        <button class="peek-btn" id="peekBtn">show shortcut</button>
+      </div>
+      <div class="answer" id="answer"></div>
+    </main>
+
+    <div class="results" id="results" hidden>
+      <div class="results-numbers">
+        <div class="result-item">
+          <div class="result-value" id="resSpeed">0</div>
+          <div class="result-label">shortcuts / min</div>
+        </div>
+        <div class="result-item">
+          <div class="result-value" id="resAcc">0%</div>
+          <div class="result-label">accuracy</div>
+        </div>
+        <div class="result-item">
+          <div class="result-value" id="resTime">0s</div>
+          <div class="result-label">time</div>
+        </div>
+      </div>
+      <button class="btn" id="restartBtn">restart</button>
+    </div>
+
+    <p class="tip">click the panel, then press the real VS&nbsp;Code shortcut on your keyboard — this is a standalone trainer, not the actual editor.</p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
